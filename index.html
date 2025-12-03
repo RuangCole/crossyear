@@ -163,7 +163,8 @@
                 this.color = WHITE;
                 this.size = Math.random() * 1 + 1;
                 this.transitionProgress = 0;
-                this.transitionSpeed = Math.random() * 0.02 + 0.04;
+                // 减小过渡速度（原0.03+0.06 → 0.01+0.03）
+                this.transitionSpeed = Math.random() * 0.01 + 0.03;
                 this.jitterSeed = Math.random() * 100;
                 this.phase = "display";
             }
@@ -249,7 +250,7 @@
                 }
             }
             
-            const maxParticles = 3000; // 减少粒子数量提高性能
+            const maxParticles = 2000; // 减少粒子数量提升性能
             if (positions.length > maxParticles) {
                 // 随机选择粒子
                 const selectedPositions = [];
@@ -269,36 +270,27 @@
             return positions.map(pos => new TextParticle(pos[0], pos[1]));
         }
         
+        // 修复粒子重新分配逻辑
         function redistributeParticles(particles, currentPositions, nextPositions) {
-            const targetCount = Math.min(currentPositions.length, nextPositions.length, 5000);
-            
-            console.log(`重新分配粒子: 当前${particles.length}, 目标${targetCount}`);
+            const targetCount = Math.min(currentPositions.length, nextPositions.length, 2000);
             
             // 调整粒子数量
             if (particles.length > targetCount) {
                 particles.length = targetCount;
-            } else if (particles.length < targetCount) {
+            } else {
                 while (particles.length < targetCount) {
-                    const randomPos = currentPositions.length > 0 ? 
-                        currentPositions[Math.floor(Math.random() * currentPositions.length)] : 
-                        [width / 2, height / 2];
+                    const randomPos = currentPositions[Math.floor(Math.random() * currentPositions.length)];
                     particles.push(new TextParticle(randomPos[0], randomPos[1]));
                 }
             }
             
-            // 调整位置数量
-            const finalCurrentPositions = currentPositions.slice(0, targetCount);
-            const finalNextPositions = nextPositions.slice(0, targetCount);
-            
-            // 分配目标位置
+            // 为每个粒子分配新目标
             for (let i = 0; i < targetCount; i++) {
                 particles[i].updateTargets(
-                    finalCurrentPositions[i][0], finalCurrentPositions[i][1],
-                    finalNextPositions[i][0], finalNextPositions[i][1]
+                    currentPositions[i][0], currentPositions[i][1],
+                    nextPositions[i][0], nextPositions[i][1]
                 );
             }
-            
-            console.log(`重新分配完成: ${particles.length} 个粒子`);
             return particles;
         }
         
@@ -306,19 +298,19 @@
         preRenderTexts();
         
         let currentTextIndex = 0;
-        let nextTextIndex = 1;
         let currentPositions = createParticlePositions(texts[currentTextIndex]);
-        let nextPositions = createParticlePositions(texts[nextTextIndex]);
         let particles = createParticles(currentPositions);
         
         // 随机粒子
         let randomParticles = [];
         
-        // 游戏状态
+        // 游戏状态（调大显示和过渡时长）
         let phase = "display";
         let phaseTimer = 0;
-        const displayDuration = 100;
-        const transitionDuration = 60;
+        // 文字停留时长（原50 → 150）
+        const displayDuration = 150;
+        // 过渡时长（原30 → 80）
+        const transitionDuration = 80;
         
         // 动画循环
         function animate() {
@@ -347,9 +339,11 @@
                 particle.draw();
             });
             
+            // 计算下一段文字索引
+            const nextTextIndex = (currentTextIndex + 1) % texts.length;
             // 更新调试信息
             debugInfo.textContent = 
-                `当前: ${texts[currentTextIndex]} | 下一: ${texts[nextTextIndex]} | 阶段: ${phase} | 文字粒子: ${particles.length} | 随机粒子: ${randomParticles.length}`;
+                `当前:${texts[currentTextIndex]} |下一:${texts[nextTextIndex]} |阶段:${phase} |文字粒子:${particles.length} |随机粒子:${randomParticles.length}`;
             
             // 阶段管理
             phaseTimer++;
@@ -359,11 +353,10 @@
                     phase = "transition";
                     phaseTimer = 0;
                     
-                    const nextNextIndex = (nextTextIndex + 1) % texts.length;
-                    console.log(`开始过渡到: ${texts[nextNextIndex]}`);
-                    
-                    const nextNextPositions = createParticlePositions(texts[nextNextIndex]);
-                    particles = redistributeParticles(particles, nextPositions, nextNextPositions);
+                    // 生成下一段文字的位置
+                    const nextPositionsNew = createParticlePositions(texts[nextTextIndex]);
+                    // 重新分配粒子到新位置
+                    particles = redistributeParticles(particles, currentPositions, nextPositionsNew);
                 }
             } else if (phase === "transition") {
                 if (phaseTimer >= transitionDuration) {
@@ -372,19 +365,16 @@
                     
                     // 强制完成过渡
                     particles.forEach(particle => {
-                        if (particle.transitionProgress < 1) {
-                            particle.transitionProgress = 1;
-                            particle.currentX = particle.nextTargetX;
-                            particle.currentY = particle.nextTargetY;
-                            particle.targetX = particle.nextTargetX;
-                            particle.targetY = particle.nextTargetY;
-                        }
+                        particle.transitionProgress = 1;
+                        particle.currentX = particle.nextTargetX;
+                        particle.currentY = particle.nextTargetY;
+                        particle.targetX = particle.nextTargetX;
+                        particle.targetY = particle.nextTargetY;
                     });
                     
+                    // 更新当前文字索引和位置
                     currentTextIndex = nextTextIndex;
-                    nextTextIndex = (nextTextIndex + 1) % texts.length;
-                    currentPositions = nextPositions;
-                    nextPositions = createParticlePositions(texts[nextTextIndex]);
+                    currentPositions = createParticlePositions(texts[currentTextIndex]);
                     
                     console.log(`过渡完成，现在显示: ${texts[currentTextIndex]}`);
                 }
