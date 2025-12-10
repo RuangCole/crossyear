@@ -44,7 +44,7 @@
 </head>
 <body>
     <div class="debug-info" id="debugInfo"></div>
-    <div class="instructions">按ESC键退出</div>
+    <div class="instructions"></div>
     <canvas id="particleCanvas"></canvas>
 
     <script>
@@ -64,7 +64,7 @@
         const BLACK = '#000000';
         
         // 文字列表
-        const texts = ["2026", "新年快乐", "恭喜发财", "万事如意", "身体健康", "家庭美满", "工作顺利"];
+        const texts = ["祝大家", "2026", "新年快乐", "吉祥如意", "马到成功", "恭喜发财", "万事如意", "身体健康", "家庭美满", "工作顺利", ];
         
         // 存储文字图像数据
         const textImageData = {};
@@ -73,24 +73,25 @@
         function preRenderTexts() {
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
-            const font = 'bold 200px "Microsoft YaHei"';
+            const fontSize = 200;
+            const font = `bold ${fontSize}px "Microsoft YaHei"`;
             
             texts.forEach(text => {
                 // 测量文字尺寸
                 tempCtx.font = font;
                 const metrics = tempCtx.measureText(text);
                 const textWidth = Math.ceil(metrics.width);
-                const textHeight = 250; // 固定高度
+                const textHeight = fontSize * 1.2; // 适配中文字体行高
                 
-                tempCanvas.width = textWidth + 40; // 增加边距
-                tempCanvas.height = textHeight + 40;
+                tempCanvas.width = textWidth + 80; // 增加左右边距
+                tempCanvas.height = textHeight + 80; // 增加上下边距
                 
                 tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
                 tempCtx.font = font;
                 tempCtx.fillStyle = WHITE;
                 tempCtx.textAlign = 'center';
                 tempCtx.textBaseline = 'middle';
-                tempCtx.fillText(text, tempCanvas.width / 2, tempCanvas.height / 2);
+                tempCtx.fillText(text, tempCanvas.width / 2, tempCanvas.height / 2 + fontSize * 0.1); // 修正基线偏移
                 
                 // 获取图像数据
                 const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
@@ -163,8 +164,7 @@
                 this.color = WHITE;
                 this.size = Math.random() * 1 + 1;
                 this.transitionProgress = 0;
-                // 减小过渡速度（原0.03+0.06 → 0.01+0.03）
-                this.transitionSpeed = Math.random() * 0.01 + 0.03;
+                this.transitionSpeed = Math.random() * 0.007 + 0.007;
                 this.jitterSeed = Math.random() * 100;
                 this.phase = "display";
             }
@@ -227,17 +227,17 @@
                 console.error(`未找到文字 ${text} 的图像数据`);
                 return [];
             }
-            
+            const fontSize = 200;
             const positions = [];
             const centerX = width / 2 - textData.width / 2;
-            const centerY = height / 2 - textData.height / 2;
+            const centerY = height / 2 - textData.height / 2 + fontSize * 0.1; // 修正垂直居中
             const imageData = textData.data.data;
             
             console.log(`开始处理文字: ${text}, 图像尺寸: ${textData.width}x${textData.height}`);
             
             let particleCount = 0;
-            for (let x = 0; x < textData.width; x += 2) {
-                for (let y = 0; y < textData.height; y += 2) {
+            for (let x = 0; x < textData.width; x += 1) { // 步长改为1，避免粒子遗漏
+                for (let y = 0; y < textData.height; y += 1) {
                     const index = (y * textData.width + x) * 4;
                     const alpha = imageData[index + 3];
                     
@@ -250,9 +250,8 @@
                 }
             }
             
-            const maxParticles = 2000; // 减少粒子数量提升性能
+            const maxParticles = 10000;
             if (positions.length > maxParticles) {
-                // 随机选择粒子
                 const selectedPositions = [];
                 for (let i = 0; i < maxParticles; i++) {
                     const randomIndex = Math.floor(Math.random() * positions.length);
@@ -272,7 +271,7 @@
         
         // 修复粒子重新分配逻辑
         function redistributeParticles(particles, currentPositions, nextPositions) {
-            const targetCount = Math.min(currentPositions.length, nextPositions.length, 2000);
+            const targetCount = Math.min(currentPositions.length, nextPositions.length, 10000);
             
             // 调整粒子数量
             if (particles.length > targetCount) {
@@ -304,13 +303,11 @@
         // 随机粒子
         let randomParticles = [];
         
-        // 游戏状态（调大显示和过渡时长）
+        // 动画状态（按60帧/秒，1秒=60帧，调整时长参数）
         let phase = "display";
         let phaseTimer = 0;
-        // 文字停留时长（原50 → 150）
-        const displayDuration = 150;
-        // 过渡时长（原30 → 80）
-        const transitionDuration = 80;
+        const displayDuration = 90; // 文字停留1秒
+        const transitionDuration = 90; // 过渡动画1秒
         
         // 动画循环
         function animate() {
@@ -387,6 +384,8 @@
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 console.log('按ESC退出');
+                // 可添加退出后的逻辑，如隐藏画布
+                canvas.style.display = 'none';
             }
         });
         
