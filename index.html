@@ -44,7 +44,7 @@
 </head>
 <body>
     <div class="debug-info" id="debugInfo"></div>
-    <div class="instructions">按ESC键退出</div>
+    <div class="instructions"></div>
     <canvas id="particleCanvas"></canvas>
 
     <script>
@@ -80,10 +80,10 @@
                 tempCtx.font = font;
                 const metrics = tempCtx.measureText(text);
                 const textWidth = Math.ceil(metrics.width);
-                const textHeight = 250; // 固定高度
+                const textHeight = 300; // 固定高度
                 
-                tempCanvas.width = textWidth + 40; // 增加边距
-                tempCanvas.height = textHeight + 40;
+                tempCanvas.width = textWidth + 80; // 增加边距
+                tempCanvas.height = textHeight + 80;
                 
                 tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
                 tempCtx.font = font;
@@ -250,7 +250,7 @@
                 }
             }
             
-            const maxParticles = 7000; // 减少粒子数量提升性能
+            const maxParticles = 9000; // 减少粒子数量提升性能
             if (positions.length > maxParticles) {
                 // 随机选择粒子
                 const selectedPositions = [];
@@ -272,7 +272,7 @@
         
         // 修复粒子重新分配逻辑
         function redistributeParticles(particles, currentPositions, nextPositions) {
-            const targetCount = Math.min(currentPositions.length, nextPositions.length, 7000);
+            const targetCount = Math.min(currentPositions.length, nextPositions.length, 9000);
             
             // 调整粒子数量
             if (particles.length > targetCount) {
@@ -309,8 +309,8 @@
         let phaseTimer = 0;
         // 文字停留时长（原50 → 150）
         const displayDuration = 150;
-        // 过渡时长（原30 → 80）
-        const transitionDuration = 80;
+        // 过渡时长（原30 → 100）
+        const transitionDuration = 100;
         
         // 动画循环
         function animate() {
@@ -342,8 +342,8 @@
             // 计算下一段文字索引
             const nextTextIndex = (currentTextIndex + 1) % texts.length;
             // 更新调试信息
-            debugInfo.textContent = 
-                `当前:${texts[currentTextIndex]} |下一:${texts[nextTextIndex]} |阶段:${phase} |文字粒子:${particles.length} |随机粒子:${randomParticles.length}`;
+           // debugInfo.textContent = 
+               // `当前:${texts[currentTextIndex]} |下一:${texts[nextTextIndex]} |阶段:${phase} |文字粒子:${particles.length} |随机粒子:${randomParticles.length}`;
             
             // 阶段管理
             phaseTimer++;
